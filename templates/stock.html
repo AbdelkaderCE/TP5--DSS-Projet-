@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stock Management - Veterinary Clinic</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="header-with-nav">
+        <div>
+          <h1>Stock Management</h1>
+          <p class="subtitle">Add or update vaccines and supplies</p>
+        </div>
+        <nav class="top-nav">
+          <a href="{{ url_for('stock') }}" class="nav-link active">Stock</a>
+          <a href="{{ url_for('invoices_list') }}" class="nav-link">Invoices</a>
+          <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+          <a href="{{ url_for('simulation') }}" class="nav-link">Simulation</a>
+        </nav>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-group">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('stock_submit') }}" class="card">
+        <section>
+          <h2>Item Details</h2>
+          <div class="grid">
+            <label>
+              <span>Reference<span class="req">*</span></span>
+              <input type="text" name="reference" placeholder="e.g., VAC-001" required />
+            </label>
+            <label>
+              <span>Name<span class="req">*</span></span>
+              <input type="text" name="name" placeholder="e.g., Rabies Vaccine" required />
+            </label>
+          </div>
+          <div class="grid">
+            <label>
+              <span>Quantity<span class="req">*</span></span>
+              <input type="number" name="quantity" min="0" step="1" required />
+            </label>
+            <label>
+              <span>Price<span class="req">*</span></span>
+              <input type="number" name="price" min="0" step="0.01" placeholder="0.00" required />
+            </label>
+          </div>
+          <label>
+            <span>Type<span class="req">*</span></span>
+            <select name="type" required>
+              <option value="">— Select —</option>
+              <option value="Vaccine">Vaccine</option>
+              <option value="Medicine">Medicine</option>
+              <option value="Accessory">Accessory</option>
+              <option value="Food">Food</option>
+              <option value="Equipment">Equipment</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+        </section>
+
+        <div class="actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="reset" class="ghost">Reset</button>
+        </div>
+      </form>
+
+      <p class="fine-print">Add new stock items or update existing by reusing the same reference.</p>
+
+      <div class="card" style="margin-top:32px;">
+        <h2>Current Stock</h2>
+        {% if stock_items %}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Refill</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in stock_items %}
+            <tr class="stock-urgency-{{ item.urgency|lower }}">
+              <td>{{ item.reference }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.type }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ '%.2f'|format(item.price) }}</td>
+              <td>
+                <form method="post" action="{{ url_for('stock_refill') }}" class="inline-refill-form">
+                  <input type="hidden" name="reference" value="{{ item.reference }}" />
+                  <input type="number" name="quantity" min="1" step="1" placeholder="Qty" required style="width:70px;" />
+                  <button type="submit" class="small-btn">+ Add</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <p>No stock items found.</p>
+        {% endif %}
+      </div>
+    </main>
+  </body>
+</html>

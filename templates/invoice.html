@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoice - Veterinary Clinic</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="header-with-nav">
+        <div>
+          <h1>Create Invoice</h1>
+          <p class="subtitle">Generate invoices with automatic PDF</p>
+        </div>
+        <nav class="top-nav">
+          <a href="{{ url_for('index') }}" class="nav-link">Animal Intake</a>
+          <a href="{{ url_for('stock') }}" class="nav-link">Stock</a>
+          <a href="{{ url_for('invoice') }}" class="nav-link active">Invoice</a>
+          <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+          <a href="{{ url_for('simulation') }}" class="nav-link">Simulation</a>
+        </nav>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-group">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('invoice_submit') }}" class="card" id="invoiceForm">
+        <input type="hidden" name="items_data" id="itemsData" />
+
+        <section>
+          <h2>Client Information</h2>
+          <div class="grid">
+            <label>
+              <span>Owner Name<span class="req">*</span></span>
+              <input type="text" name="owner_name" id="ownerName" required />
+            </label>
+            <label>
+              <span>Payment Method<span class="req">*</span></span>
+              <select name="payment_method" id="paymentMethod" required>
+                <option value="">— Select —</option>
+                <option value="Cash">Cash</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Check">Check</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section>
+          <h2>Invoice Items</h2>
+          <div id="itemsContainer">
+            <!-- Dynamic rows will be added here -->
+          </div>
+          <button type="button" class="ghost" id="addItemBtn" style="margin-top: 12px;">+ Add Item</button>
+        </section>
+
+        <section class="total-section">
+          <div class="total-display">
+            <span class="total-label">Total:</span>
+            <span class="total-amount" id="totalAmount">$0.00</span>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button type="submit" class="primary">Generate Invoice & PDF</button>
+          <button type="reset" class="ghost" id="resetBtn">Reset</button>
+        </div>
+      </form>
+    </main>
+
+    <script src="{{ url_for('static', filename='invoice.js') }}"></script>
+  </body>
+</html>

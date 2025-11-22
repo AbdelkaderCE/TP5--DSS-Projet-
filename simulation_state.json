@@ -1,0 +1,49 @@
+{
+  "current_day": 13,
+  "budget": 9737.46,
+  "daily_events": [
+    {
+      "type": "visit",
+      "animal": "Cat #289 (Cat)",
+      "items_used": [
+        "Consultation Fee x1",
+        "Surgical Gloves x1"
+      ],
+      "revenue": 77.78
+    },
+    {
+      "type": "visit",
+      "animal": "Hamster #696 (Hamster)",
+      "items_used": [
+        "Consultation Fee x1",
+        "Parvovirus Vaccine x1",
+        "Surgical Gloves x2"
+      ],
+      "revenue": 134.98
+    },
+    {
+      "type": "visit",
+      "animal": "Dog #728 (Dog)",
+      "items_used": [
+        "Consultation Fee x1",
+        "Rabies Vaccine x1",
+        "Anti-Inflammatory x1",
+        "Surgical Gloves x2"
+      ],
+      "revenue": 134.65
+    },
+    {
+      "type": "cost",
+      "name": "Clinic Rent",
+      "cost": 100.0
+    },
+    {
+      "type": "cost",
+      "name": "Storage Cost",
+      "cost": 1.76,
+      "units": 176
+    }
+  ],
+  "total_animals_treated": 69,
+  "start_date": "2025-11-22"
+}

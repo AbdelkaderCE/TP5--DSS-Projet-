@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard - Veterinary Clinic</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <main class="container dashboard-container">
+      <div class="header-with-nav">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="subtitle">Commercial Statistics & Analytics{% if state %} - Day {{ state.current_day }} | Budget: ${{ "%.2f"|format(state.budget) }}{% endif %}</p>
+        </div>
+        <nav class="top-nav">
+          <a href="{{ url_for('stock') }}" class="nav-link">Stock</a>
+          <a href="{{ url_for('invoices_list') }}" class="nav-link">Invoices</a>
+          <a href="{{ url_for('dashboard') }}" class="nav-link active">Dashboard</a>
+          <a href="{{ url_for('simulation') }}" class="nav-link">Simulation</a>
+        </nav>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon animals-icon">🐾</div>
+          <div class="stat-content">
+            <div class="stat-value" id="total-animals">0</div>
+            <div class="stat-label">Total Animals</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stock-icon">📦</div>
+          <div class="stat-content">
+            <div class="stat-value" id="total-stock">0</div>
+            <div class="stat-label">Stock Items</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon invoice-icon">📄</div>
+          <div class="stat-content">
+            <div class="stat-value" id="total-invoices">0</div>
+            <div class="stat-label">Invoices</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon revenue-icon">💰</div>
+          <div class="stat-content">
+            <div class="stat-value" id="total-revenue">$0</div>
+            <div class="stat-label">Total Revenue</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulation Quick Access -->
+      {% if state %}
+      <div class="card simulation-quick-card">
+        <div class="sim-quick-header">
+          <h2>🎮 Simulation Status</h2>
+          <a href="{{ url_for('simulation') }}" class="btn-link primary">Go to Simulation →</a>
+        </div>
+        <div class="sim-quick-stats">
+          <div class="sim-stat">
+            <span class="sim-label">Current Day</span>
+            <span class="sim-value">{{ state.current_day }}</span>
+          </div>
+          <div class="sim-stat">
+            <span class="sim-label">Budget</span>
+            <span class="sim-value">${{ "%.2f"|format(state.budget) }}</span>
+          </div>
+          <div class="sim-stat">
+            <span class="sim-label">Animals Treated</span>
+            <span class="sim-value">{{ state.total_animals_treated }}</span>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Low Stock Alerts -->
+      <div id="low-stock-section" class="alert-section" style="display: none;">
+        <h2 class="section-title">⚠️ Low Stock Alerts</h2>
+        <div id="low-stock-alerts" class="alerts-container"></div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="charts-grid">
+        <!-- Animal Types Distribution -->
+        <div class="chart-card">
+          <h2 class="chart-title">Animal Distribution by Type</h2>
+          <div class="chart-container">
+            <canvas id="animalTypesChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Stock by Type -->
+        <div class="chart-card">
+          <h2 class="chart-title">Stock Inventory by Type</h2>
+          <div class="chart-container">
+            <canvas id="stockChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Monthly Revenue -->
+        <div class="chart-card chart-card-wide">
+          <h2 class="chart-title">Daily Revenue Trend (Last 30 Days)</h2>
+          <div class="chart-container">
+            <canvas id="revenueChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Fetch dashboard data
+      fetch('/api/dashboard-data')
+        .then(response => response.json())
+        .then(data => {
+          // Update stats cards
+          document.getElementById('total-animals').textContent = data.total_animals || 0;
+          document.getElementById('total-stock').textContent = data.stock_items.length || 0;
+          document.getElementById('total-invoices').textContent = data.total_invoices || 0;
+          document.getElementById('total-revenue').textContent = `$${(data.total_revenue || 0).toFixed(2)}`;
+
+          // Low stock alerts
+          if (data.low_stock_items.length > 0) {
+            document.getElementById('low-stock-section').style.display = 'block';
+            const alertsHtml = data.low_stock_items.map(item => 
+              `<div class="alert-item">
+                <strong>${item.name}</strong> (${item.reference}) - Only <span class="quantity-warn">${item.quantity}</span> left
+              </div>`
+            ).join('');
+            document.getElementById('low-stock-alerts').innerHTML = alertsHtml;
+          }
+
+          // Chart 1: Animal Types (Pie Chart)
+          const animalTypesCtx = document.getElementById('animalTypesChart').getContext('2d');
+          const animalTypes = Object.keys(data.animal_types);
+          const animalCounts = Object.values(data.animal_types);
+          
+          // Only create chart if we have data
+          if (animalTypes.length > 0) {
+            new Chart(animalTypesCtx, {
+              type: 'pie',
+              data: {
+                labels: animalTypes,
+                datasets: [{
+                  data: animalCounts,
+                  backgroundColor: [
+                    '#6aa5ff',
+                    '#4cd97b',
+                    '#ff6b6b',
+                    '#ffd93d',
+                    '#a78bfa',
+                    '#fb923c',
+                    '#22d3ee',
+                    '#f472b6'
+                  ],
+                  borderWidth: 2,
+                  borderColor: '#141a2f'
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { color: '#e6e9ef', padding: 15, font: { size: 12 } }
+                  },
+                  tooltip: {
+                    backgroundColor: '#141a2f',
+                    titleColor: '#e6e9ef',
+                    bodyColor: '#a8b0c3',
+                    borderColor: '#26304a',
+                    borderWidth: 1
+                  }
+                }
+              }
+            });
+          }
+
+          // Chart 2: Stock by Type (Bar Chart)
+          const stockCtx = document.getElementById('stockChart').getContext('2d');
+          const stockByType = {};
+          data.stock_items.forEach(item => {
+            stockByType[item.type] = (stockByType[item.type] || 0) + item.quantity;
+          });
+          
+          new Chart(stockCtx, {
+            type: 'bar',
+            data: {
+              labels: Object.keys(stockByType),
+              datasets: [{
+                label: 'Quantity',
+                data: Object.values(stockByType),
+                backgroundColor: '#6aa5ff',
+                borderColor: '#3f7fe6',
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: '#a8b0c3', stepSize: 5 },
+                  grid: { color: '#26304a' }
+                },
+                x: {
+                  ticks: { color: '#a8b0c3' },
+                  grid: { display: false }
+                }
+              },
+              plugins: {
+                legend: {
+                  display: false
+                },
+                tooltip: {
+                  backgroundColor: '#141a2f',
+                  titleColor: '#e6e9ef',
+                  bodyColor: '#a8b0c3',
+                  borderColor: '#26304a',
+                  borderWidth: 1
+                }
+              }
+            }
+          });
+
+          // Chart 3: Daily Revenue (Line Chart)
+          const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+          const days = Object.keys(data.daily_revenue).sort();
+          const revenues = days.map(d => data.daily_revenue[d]);
+          
+          new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+              labels: days,
+              datasets: [{
+                label: 'Revenue ($)',
+                data: revenues,
+                borderColor: '#4cd97b',
+                backgroundColor: 'rgba(76, 217, 123, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#4cd97b',
+                pointBorderColor: '#141a2f',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { 
+                    color: '#a8b0c3',
+                    callback: value => `$${value}`
+                  },
+                  grid: { color: '#26304a' }
+                },
+                x: {
+                  ticks: { color: '#a8b0c3' },
+                  grid: { color: '#26304a' }
+                }
+              },
+              plugins: {
+                legend: {
+                  labels: { color: '#e6e9ef', padding: 15 }
+                },
+                tooltip: {
+                  backgroundColor: '#141a2f',
+                  titleColor: '#e6e9ef',
+                  bodyColor: '#a8b0c3',
+                  borderColor: '#26304a',
+                  borderWidth: 1,
+                  callbacks: {
+                    label: ctx => `Revenue: $${ctx.parsed.y.toFixed(2)}`
+                  }
+                }
+              }
+            }
+          });
+        })
+        .catch(error => {
+          console.error('Error loading dashboard data:', error);
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Veterinary Clinic - Intake Form</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="header-with-nav">
+        <div>
+          <h1>Veterinary Clinic</h1>
+          <p class="subtitle">Animal and Owner Information</p>
+        </div>
+        <nav class="top-nav">
+          <a href="{{ url_for('index') }}" class="nav-link active">Animal Intake</a>
+          <a href="{{ url_for('stock') }}" class="nav-link">Stock</a>
+          <a href="{{ url_for('invoice') }}" class="nav-link">Invoice</a>
+          <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+          <a href="{{ url_for('simulation') }}" class="nav-link">Simulation</a>
+        </nav>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-group">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('submit') }}" class="card">
+        <section>
+          <h2>Animal</h2>
+          <div class="grid">
+            <label>
+              <span>Animal Name<span class="req">*</span></span>
+              <input type="text" name="animal_name" required />
+            </label>
+            <label>
+              <span>Animal Type<span class="req">*</span></span>
+              <input type="text" name="animal_type" placeholder="e.g., Dog, Cat" required />
+            </label>
+          </div>
+          <div class="grid">
+            <label>
+              <span>Age</span>
+              <input type="number" name="age" min="0" step="1" />
+            </label>
+            <label>
+              <span>Sex</span>
+              <select name="sex">
+                <option value="">—</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Unknown</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            <span>Medical History</span>
+            <textarea name="medical_history" rows="4" placeholder="Relevant medical background, allergies, medications..."></textarea>
+          </label>
+        </section>
+
+        <section>
+          <h2>Owner</h2>
+          <div class="grid">
+            <label>
+              <span>Owner Name<span class="req">*</span></span>
+              <input type="text" name="owner_name" required />
+            </label>
+            <label>
+              <span>Owner Email<span class="req">*</span></span>
+              <input type="email" name="owner_email" required />
+            </label>
+          </div>
+          <label>
+            <span>Owner Phone</span>
+            <input type="tel" name="owner_phone" placeholder="e.g., +1 555 123 4567" />
+          </label>
+        </section>
+
+        <section>
+          <h2>Comments</h2>
+          <label>
+            <span>Additional Notes</span>
+            <textarea name="comments" rows="3" placeholder="Anything else we should know..."></textarea>
+          </label>
+        </section>
+
+        <div class="actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="reset" class="ghost">Reset</button>
+        </div>
+      </form>
+
+      <p class="fine-print">A new row is appended to <code>animals.xlsx</code> (sheet "Animals") on each submission.</p>
+    </main>
+  </body>
+  </html>

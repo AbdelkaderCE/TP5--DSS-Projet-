@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoices - Veterinary Clinic</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="header-with-nav">
+        <div>
+          <h1>Invoices</h1>
+          <p class="subtitle">Automatically generated from simulation visits</p>
+        </div>
+        <nav class="top-nav">
+          <a href="{{ url_for('stock') }}" class="nav-link">Stock</a>
+          <a href="{{ url_for('invoices_list') }}" class="nav-link active">Invoices</a>
+          <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+          <a href="{{ url_for('simulation') }}" class="nav-link">Simulation</a>
+        </nav>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-group">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="card">
+        <h2>Invoice List</h2>
+        {% if invoices %}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Owner</th>
+              <th>Total</th>
+              <th>PDF</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inv in invoices %}
+            <tr>
+              <td>{{ inv.number }}</td>
+              <td>{{ inv.timestamp }}</td>
+              <td>{{ inv.owner }}</td>
+              <td>${{ '%.2f'|format(inv.total) }}</td>
+              <td>
+                {% if inv.pdf_exists %}
+                <a class="small-btn" href="{{ url_for('invoices_download', invoice_num=inv.number) }}" download>Download</a>
+                {% else %}
+                <span class="muted">Missing</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <p>No invoices found yet. Run the simulation to generate visits.</p>
+        {% endif %}
+      </div>
+    </main>
+  </body>
+</html>

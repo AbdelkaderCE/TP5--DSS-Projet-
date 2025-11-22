@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoice Generated - Veterinary Clinic</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="header-with-nav">
+        <div>
+          <h1>Invoice Created</h1>
+          <p class="subtitle">Invoice #{{ invoice_num }}</p>
+        </div>
+        <nav class="top-nav">
+          <a href="{{ url_for('index') }}" class="nav-link">Animal Intake</a>
+          <a href="{{ url_for('stock') }}" class="nav-link">Stock</a>
+          <a href="{{ url_for('invoice') }}" class="nav-link">Invoice</a>
+          <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+          <a href="{{ url_for('simulation') }}" class="nav-link">Simulation</a>
+        </nav>
+      </div>
+
+      <div class="card success-card">
+        <div class="success-icon">✓</div>
+        <h2>Invoice Generated Successfully!</h2>
+        <p>Invoice #{{ invoice_num }} has been created and saved.</p>
+        
+        <div class="actions" style="margin-top: 24px;">
+          <a href="{{ url_for('invoice_download', invoice_num=invoice_num) }}" class="primary btn-link" download>Download PDF</a>
+          <a href="{{ url_for('invoice') }}" class="ghost btn-link">Create Another Invoice</a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simulation Game - Veterinary Clinic</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="header-with-nav">
+        <div>
+          <h1>🎮 Clinic Simulation</h1>
+          <p class="subtitle">Manage your veterinary clinic day by day</p>
+        </div>
+        <nav class="top-nav">
+          <a href="{{ url_for('stock') }}" class="nav-link">Stock</a>
+          <a href="{{ url_for('invoices_list') }}" class="nav-link">Invoices</a>
+          <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+          <a href="{{ url_for('simulation') }}" class="nav-link active">Simulation</a>
+        </nav>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-group">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Game Status -->
+      <div class="game-status">
+        <div class="status-item">
+          <span class="status-label">📅 Day</span>
+          <span class="status-value">{{ state.current_day }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">💰 Budget</span>
+          <span class="status-value">${{ "%.2f"|format(state.budget) }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">🐾 Animals Treated</span>
+          <span class="status-value">{{ state.total_animals_treated }}</span>
+        </div>
+      </div>
+
+      <!-- Game Controls -->
+      <div class="game-controls">
+        <form method="post" action="{{ url_for('simulation_next_day') }}" style="display: inline;">
+          <button type="submit" class="primary game-btn">⏭️ Next Day</button>
+        </form>
+        <a href="{{ url_for('dashboard') }}" class="btn-link ghost game-btn">📊 View Dashboard</a>
+        <form method="post" action="{{ url_for('simulation_reset') }}" style="display: inline;" onsubmit="return confirm('Reset simulation? All progress will be lost!');">
+          <button type="submit" class="ghost game-btn">🔄 Reset Game</button>
+        </form>
+      </div>
+
+      <!-- DSS Recommendations -->
+      {% if recommendations %}
+      <div class="card dss-card">
+        <h2 class="dss-title">🔔 Decision Support System - Purchase Recommendations</h2>
+        <p class="dss-subtitle">Smart recommendations based on current stock levels</p>
+        
+        <div class="recommendations-list">
+          {% for rec in recommendations %}
+          <div class="recommendation-item urgency-{{ rec.urgency|lower }}">
+            <div class="rec-header">
+              <span class="urgency-badge">{{ rec.urgency }}</span>
+              <strong>{{ rec.name }}</strong>
+              <span class="rec-ref">({{ rec.reference }})</span>
+            </div>
+            <div class="rec-details">
+              <div class="rec-info">
+                <div class="info-row">
+                  <span>Current Stock:</span>
+                  <span class="highlight-qty">{{ rec.current_qty }} units</span>
+                </div>
+                <div class="info-row">
+                  <span>Suggested Qty:</span>
+                  <span class="highlight-rec">{{ rec.recommended_qty }}</span>
+                </div>
+                <div class="info-row">
+                  <span>Unit Price:</span>
+                  <span>${{ "%.2f"|format(rec.unit_price) }}</span>
+                </div>
+              </div>
+              <form method="post" action="{{ url_for('simulation_buy') }}" class="buy-form adjustable-form">
+                <input type="hidden" name="reference" value="{{ rec.reference }}" />
+                <label class="qty-adjust-label">
+                  <span>Purchase Qty:</span>
+                  <div class="qty-adjust-wrapper">
+                    <button type="button" class="qty-btn" onclick="var i=this.parentNode.querySelector('input[type=number]'); if(i.value>1){i.stepDown(); updateEst(this);}">−</button>
+                    <input type="number" name="quantity" value="{{ rec.recommended_qty }}" min="1" step="1" class="qty-input" oninput="updateEst(this)" />
+                    <button type="button" class="qty-btn" onclick="var i=this.parentNode.querySelector('input[type=number]'); i.stepUp(); updateEst(this);">+</button>
+                  </div>
+                </label>
+                <div class="est-cost" data-unit="{{ rec.unit_price }}">Est Cost: $<span class="est-val">{{ "%.2f"|format(rec.recommended_qty * rec.unit_price) }}</span></div>
+                <button type="submit" class="primary buy-btn">🛒 Add</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="card success-message">
+        <h3>✅ All stock levels are healthy!</h3>
+        <p>No purchase recommendations at this time.</p>
+      </div>
+      {% endif %}
+
+      <!-- Daily Events Log -->
+      {% if state.daily_events %}
+      <div class="card events-card">
+        <h2 class="events-title">📋 Today's Events</h2>
+        <div class="events-list">
+          {% for event in state.daily_events %}
+          {% if event.type == 'cost' %}
+          <div class="event-item">
+            <span class="event-icon">💸</span>
+            <div class="event-content">
+              <strong>{{ event.name }}</strong>
+              <div class="items-used">Expense recorded</div>
+              <div class="revenue-earned" style="color: var(--error);">
+                −${{ "%.2f"|format(event.cost) }}{% if event.units %} ({{ event.units }} units){% endif %}
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="event-item">
+            <span class="event-icon">🐾</span>
+            <div class="event-content">
+              <strong>{{ event.animal }}</strong> visit
+              {% if event.items_used %}
+              <div class="items-used">
+                Used: {{ event.items_used|join(', ') }}
+              </div>
+              {% endif %}
+              {% if event.revenue %}
+              <div class="revenue-earned">
+                💰 Revenue: ${{ "%.2f"|format(event.revenue) }}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- How to Play -->
+      <div class="card help-card">
+        <h2>🎯 How to Play</h2>
+        <ul class="help-list">
+          <li><strong>Next Day:</strong> Advance time. Random animals will visit and consume stock.</li>
+          <li><strong>DSS Notifications:</strong> Get smart alerts when stock is low (< 10 units).</li>
+          <li><strong>Auto-Buy:</strong> Adjust quantity with +/- then click Add.</li>
+          <li><strong>Budget:</strong> Earn revenue from daily visits. Manage your budget wisely!</li>
+          <li><strong>Reset:</strong> Full reset wipes all data (animals, invoices, stock, state).</li>
+        </ul>
+      </div>
+    </main>
+    <script>
+      function updateEst(el){
+        var wrapper = el.closest('.adjustable-form');
+        if(!wrapper) return;
+        var unit = parseFloat(wrapper.querySelector('.est-cost').getAttribute('data-unit'))||0;
+        var qtyInput = wrapper.querySelector('input[name=quantity]');
+        var qty = parseInt(qtyInput.value)||0;
+        wrapper.querySelector('.est-val').textContent = (unit*qty).toFixed(2);
+      }
+    </script>
+  </body>
+</html>
